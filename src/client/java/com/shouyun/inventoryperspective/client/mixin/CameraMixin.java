@@ -2,6 +2,7 @@ package com.shouyun.inventoryperspective.client.mixin;
 
 import com.shouyun.inventoryperspective.client.camera.InventoryCameraController;
 import com.shouyun.inventoryperspective.client.config.InventoryPerspectiveConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.util.Mth;
@@ -44,13 +45,15 @@ public abstract class CameraMixin {
                 : Vec3.directionFromRotation(previousPitch, previousYaw).scale(-4 * scale);
         // Positive camera-right offset puts the player on the left of the picture.
         double side = InventoryPerspectiveConfig.get().inventoryOnRight ? 0.95 : -0.95;
+        var window = Minecraft.getInstance().getWindow();
+        side *= Math.min(1, (double) window.getWidth() / window.getHeight() / 1.6);
         double radians = Math.toRadians(yaw);
-        Vec3 shoulderOffset = Vec3.directionFromRotation(12, yaw).scale(-2.6 * scale)
+        Vec3 shoulderOffset = Vec3.directionFromRotation(18, yaw).scale(-3.2 * scale)
                 .add(-Math.cos(radians) * side * scale, 0.2 * scale, -Math.sin(radians) * side * scale);
         Vec3 offset = originalOffset.lerp(shoulderOffset, progress);
-        setRotation(Mth.rotLerp((float) progress, previousYaw, yaw), Mth.lerp((float) progress, previousPitch, 12));
+        setRotation(Mth.rotLerp((float) progress, previousYaw, yaw), Mth.lerp((float) progress, previousPitch, 18));
         setPosition(anchor.add(inventoryPerspective$clipOffset(level, entity, anchor, offset)));
-        detached = progress > 0 || !previous.isFirstPerson();
+        detached = progress > 0.23 || !previous.isFirstPerson();
     }
 
     @Unique

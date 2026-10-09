@@ -9,5 +9,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface ContainerAccessor {
     @Accessor("leftPos") int smokeLeft();
     @Accessor("topPos") int smokeTop();
-    @Accessor("hoveredSlot") void smokeHover(Slot slot);
+    @Accessor("hoveredSlot") Slot smokeHovered();
 }

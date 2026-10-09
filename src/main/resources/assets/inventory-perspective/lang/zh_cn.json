@@ -1,12 +1,12 @@
 {
   "modmenu.nameTranslation.inventory-perspective": "背包视角",
-  "modmenu.summaryTranslation.inventory-perspective": "打开背包，进入越肩视角",
-  "modmenu.descriptionTranslation.inventory-perspective": "打开生存背包时平滑切换越肩镜头，背包默认显示在右侧。保留原版及材质包界面，通过 InvMove 继续移动。",
+  "modmenu.summaryTranslation.inventory-perspective": "背包从玩家前方展开到世界中",
+  "modmenu.descriptionTranslation.inventory-perspective": "打开生存背包时切换越肩镜头，原版背包从玩家前方向身旁展开为世界空间面板。支持材质包，通过 InvMove 继续移动。",
   "inventory-perspective.config.title": "Inventory Perspective 设置",
   "inventory-perspective.config.general": "背包视角",
   "inventory-perspective.config.enabled": "启用背包视角",
   "inventory-perspective.config.right": "背包显示在右侧",
-  "inventory-perspective.config.right.tooltip": "开启：玩家在左、背包在右。关闭：玩家在右、背包在左。配方书展开时使用原版排布。",
-  "inventory-perspective.config.duration": "镜头过渡时长（毫秒）",
-  "inventory-perspective.config.duration.tooltip": "同时控制打开和返回镜头的速度。设为 0 可关闭动画。移动及下蹲方式请在 InvMove 中调整。"
+  "inventory-perspective.config.right.tooltip": "开启：玩家在左、面板向右展开。关闭：玩家在右、面板向左展开。配方书也显示在世界面板上。",
+  "inventory-perspective.config.duration": "展开与镜头过渡时长（毫秒）",
+  "inventory-perspective.config.duration.tooltip": "同时控制面板展开、收回与越肩镜头的速度。设为 0 可关闭动画。移动及下蹲方式请在 InvMove 中调整。"
 }

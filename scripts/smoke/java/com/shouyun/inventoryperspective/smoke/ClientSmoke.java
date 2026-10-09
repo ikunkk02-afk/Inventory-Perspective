@@ -3,9 +3,12 @@ package com.shouyun.inventoryperspective.smoke;
 import com.google.gson.GsonBuilder;
 import com.shouyun.inventoryperspective.smoke.mixin.ContainerAccessor;
 import com.shouyun.inventoryperspective.smoke.mixin.RecipeBookAccessor;
+import com.shouyun.inventoryperspective.smoke.mixin.MouseHandlerAccessor;
 import com.shouyun.inventoryperspective.client.camera.InventoryCameraController;
 import com.shouyun.inventoryperspective.client.config.InventoryPerspectiveConfig;
 import com.shouyun.inventoryperspective.client.config.InventoryPerspectiveConfigScreen;
+import com.shouyun.inventoryperspective.client.screen.WorldInventoryRenderer;
+import com.shouyun.inventoryperspective.client.screen.PanelGeometry;
 import me.pieking1215.invmove.InvMove;
 import me.pieking1215.invmove.InvMoveConfig;
 import net.fabricmc.api.ClientModInitializer;
@@ -52,6 +55,8 @@ public class ClientSmoke implements ClientModInitializer {
     private int tick;
     private boolean loading;
     private Vec3 movementStart;
+    private Vec3 unfoldingStart;
+    private Vec3 earlyPanelPosition;
     private Path output;
 
     @Override
@@ -93,6 +98,8 @@ public class ClientSmoke implements ClientModInitializer {
         tick++;
         client.getToasts().clear();
         client.gui.getChat().clearMessages(true);
+        if (tick >= 31 && tick <= 45) shot(client, String.format("opening-%02d.png", tick - 31));
+        if (tick >= 81 && tick <= 90) shot(client, String.format("closing-%02d.png", tick - 81));
         switch (tick) {
             case 20 -> {
                 client.options.setCameraType(CameraType.FIRST_PERSON);
@@ -117,13 +124,31 @@ public class ClientSmoke implements ClientModInitializer {
                 check(client.options.getCameraType() == CameraType.THIRD_PERSON_BACK, "opening switches to third person");
             }
             case 31 -> check(client.player.input.forwardImpulse > 0, "movement remains active on the first tick after opening");
+            case 32 -> {
+                earlyPanelPosition = WorldInventoryRenderer.geometry().center();
+                unfoldingStart = WorldInventoryRenderer.geometry().center().subtract(client.player.position());
+                shot(client, "00-unfolding.png");
+            }
+            case 34 -> shot(client, "00-unfolding-middle.png");
             case 50 -> {
                 check(client.screen instanceof InventoryScreen, "inventory stays open during movement");
                 check(client.player.position().distanceTo(movementStart) > 0.5, "real InvMove movement while inventory is open");
                 check(client.player.input.forwardImpulse > 0, "forward input continues after opening");
                 keys.clear();
                 var screen = inventory(client);
-                check(((ContainerAccessor) screen).smokeLeft() > (screen.width - 176) / 2, "inventory panel is on the right");
+                shot(client, "01-right-inventory.png");
+                var panel = WorldInventoryRenderer.geometry();
+                check(panel != null && panel.center().x < client.player.getX() - 1.8, "world panel unfolds to player right");
+                check(Math.abs(panel.center().z - earlyPanelPosition.z) > 1, "world plane follows the moving player");
+                check(Math.abs(unfoldingStart.x) < 1.8, "opening starts in front of player before unfolding sideways");
+                var a = panel.project((screen.width - 176) / 2.0, (screen.height - 166) / 2.0);
+                var b = panel.project((screen.width + 176) / 2.0, (screen.height - 166) / 2.0);
+                var c = panel.project((screen.width - 176) / 2.0, (screen.height + 166) / 2.0);
+                var d = panel.project((screen.width + 176) / 2.0, (screen.height + 166) / 2.0);
+                double leftHeight = Math.hypot(c.x() - a.x(), c.y() - a.y());
+                double rightHeight = Math.hypot(d.x() - b.x(), d.y() - b.y());
+                check(Math.abs(leftHeight - rightHeight) > 4, "panel has real perspective rather than a screen-aligned rectangle");
+                check(panel.project(screen.width / 2.0, screen.height / 2.0).x() > screen.width / 2.0, "projected world inventory is on the right");
                 check(InventoryCameraController.progress() > 0.99, "opening transition completes");
                 Vec3 eye = client.player.getEyePosition(client.getTimer().getGameTimeDeltaPartialTick(true));
                 check(client.gameRenderer.getMainCamera().getPosition().x < eye.x, "camera on right shoulder puts player on the left");
@@ -142,14 +167,13 @@ public class ClientSmoke implements ClientModInitializer {
                 check(client.player.inventoryMenu.getCarried().isEmpty(), "left-click returns remaining items");
                 var screen = inventory(client);
                 var button = screen.children().stream().filter(ImageButton.class::isInstance).map(ImageButton.class::cast).findFirst().orElseThrow();
-                screen.mouseClicked(button.getX() + 5, button.getY() + 5, 0);
-                screen.mouseReleased(button.getX() + 5, button.getY() + 5, 0);
+                clickGui(client, button.getX() + 5, button.getY() + 5, 0);
             }
             case 70 -> {
                 var screen = inventory(client);
                 check(screen.getRecipeBookComponent().isVisible(), "recipe book button works after relocation");
                 var search = ((RecipeBookAccessor) screen.getRecipeBookComponent()).smokeSearch();
-                screen.mouseClicked(search.getX() + 4, search.getY() + 4, 0);
+                clickGui(client, search.getX() + 4, search.getY() + 4, 0);
                 screen.charTyped('w', 0);
                 check(search.getValue().equals("w"), "recipe search accepts text");
                 keys.add(GLFW.GLFW_KEY_W);
@@ -167,10 +191,13 @@ public class ClientSmoke implements ClientModInitializer {
                 InventoryPerspectiveConfig.get().inventoryOnRight = false;
                 client.setScreen(new InventoryScreen(client.player));
                 inventory(client).getRecipeBookComponent().toggleVisibility();
+                client.screen.resize(client, client.screen.width, client.screen.height);
             }
             case 110 -> {
                 var screen = inventory(client);
-                check(((ContainerAccessor) screen).smokeLeft() < (screen.width - 176) / 2, "left-side option relocates panel");
+                var panel = WorldInventoryRenderer.geometry();
+                check(panel.center().x > client.player.getX() + 1.8, "left-side option moves the plane to player left");
+                check(panel.project(screen.width / 2.0, screen.height / 2.0).x() < screen.width / 2.0, "left-side option mirrors projected panel");
                 check(client.gameRenderer.getMainCamera().getPosition().x > client.player.getX(), "left-side option mirrors camera shoulder");
                 shot(client, "03-left-inventory.png");
                 client.setScreen(null);
@@ -230,24 +257,30 @@ public class ClientSmoke implements ClientModInitializer {
                 client.options.keyShift.setDown(true);
             }
             case 216 -> {
+                InventoryPerspectiveConfig.get().transitionMillis = 0;
                 client.setScreen(new InventoryScreen(client.player));
-                clickSlot(client, 9, 0);
             }
             case 217 -> {
+                clickSlot(client, 9, 0);
+            }
+            case 218 -> {
                 var screen = inventory(client);
                 var position = (ContainerAccessor) screen;
                 var first = screen.getMenu().getSlot(11);
                 var second = screen.getMenu().getSlot(12);
-                screen.mouseClicked(position.smokeLeft() + first.x + 8, position.smokeTop() + first.y + 8, 0);
-                screen.mouseDragged(position.smokeLeft() + first.x + 8, position.smokeTop() + first.y + 8, 0, 1, 0);
-                screen.mouseDragged(position.smokeLeft() + second.x + 8, position.smokeTop() + second.y + 8, 0, 18, 0);
-                screen.mouseReleased(position.smokeLeft() + second.x + 8, position.smokeTop() + second.y + 8, 0);
+                var p = project(position.smokeLeft() + first.x + 8, position.smokeTop() + first.y + 8);
+                var q = project(position.smokeLeft() + second.x + 8, position.smokeTop() + second.y + 8);
+                screen.mouseClicked(p.x(), p.y(), 0);
+                screen.mouseDragged(p.x(), p.y(), 0, 1, 0);
+                screen.mouseDragged(q.x(), q.y(), 0, q.x() - p.x(), q.y() - p.y());
+                screen.mouseReleased(q.x(), q.y(), 0);
             }
             case 219 -> {
                 check(client.player.inventoryMenu.getSlot(11).getItem().getCount() == 3
                         && client.player.inventoryMenu.getSlot(12).getItem().getCount() == 3, "drag distribution works at relocated slots");
                 clickSlot(client, 9, 0);
                 client.setScreen(null);
+                InventoryPerspectiveConfig.get().transitionMillis = 350;
             }
             case 225 -> {
                 check(client.player.isShiftKeyDown(), "player is crouching before opening");
@@ -257,11 +290,20 @@ public class ClientSmoke implements ClientModInitializer {
                 check(client.player.input.shiftKeyDown, "default InvMove mode maintains crouch after opening");
                 clickSlot(client, 9, 0);
             }
+            case 236 -> {
+                var screen = inventory(client);
+                var position = (ContainerAccessor) screen;
+                var slot = screen.getMenu().getSlot(10);
+                var point = project(position.smokeLeft() + slot.x + 8, position.smokeTop() + slot.y + 8);
+                ((MouseHandlerAccessor) client.mouseHandler).smokeMove(client.getWindow().getWindow(), point.x() * client.getWindow().getScreenWidth() / screen.width,
+                        point.y() * client.getWindow().getScreenHeight() / screen.height);
+            }
             case 238 -> {
                 var screen = inventory(client);
-                ((ContainerAccessor) screen).smokeHover(screen.getMenu().getSlot(10));
+                check(((ContainerAccessor) screen).smokeHovered() == screen.getMenu().getSlot(10), "world ray hover identifies the actual slot");
                 screen.keyPressed(GLFW.GLFW_KEY_1, 0, 0);
             }
+            case 237 -> shot(client, "08-world-slot-hover.png");
             case 240 -> {
                 check(client.player.inventoryMenu.getSlot(9).getItem().isEmpty(), "shift-click quick transfer works at relocated slot");
                 check(client.player.inventoryMenu.getSlot(36).getItem().getCount() == 1, "number key swaps hovered inventory slot with hotbar");
@@ -282,7 +324,11 @@ public class ClientSmoke implements ClientModInitializer {
             }
             case 295 -> {
                 var screen = inventory(client);
-                check(((ContainerAccessor) screen).smokeLeft() == (screen.width - 176) / 2, "small GUI falls back to centered panel");
+                check(WorldInventoryRenderer.geometry() != null, "narrow window retains world-space rendering");
+                var point = project(screen.width / 2.0, screen.height / 2.0);
+                check(WorldInventoryRenderer.pick(point.x(), point.y()) != null, "narrow window ray intersection stays accurate");
+                var edge = project((screen.width + 176) / 2.0, screen.height / 2.0);
+                check(edge.x() > 0 && edge.x() < screen.width, "narrow window fits the panel inside the viewport");
                 client.setScreen(null);
                 GLFW.glfwSetWindowSize(client.getWindow().getWindow(), 1280, 720);
                 client.options.guiScale().set(3);
@@ -331,6 +377,43 @@ public class ClientSmoke implements ClientModInitializer {
                 client.options.setCameraType(CameraType.FIRST_PERSON);
                 client.setScreen(new InventoryScreen(client.player));
             }
+            case 343 -> {
+                InventoryPerspectiveConfig.get().transitionMillis = 0;
+                client.setScreen(new InventoryScreen(client.player));
+            }
+            case 344 -> clickSlot(client, 11, 0);
+            case 345 -> {
+                var uuid = client.player.getUUID();
+                var server = client.getSingleplayerServer();
+                server.execute(() -> {
+                    var player = server.getPlayerList().getPlayer(uuid);
+                    for (int x = -4; x <= 3; x++) for (int y = -60; y <= -56; y++) {
+                        player.serverLevel().setBlock(new BlockPos(x, y, 1), Blocks.STONE.defaultBlockState(), 3);
+                    }
+                });
+            }
+            case 350 -> {
+                var screen = inventory(client);
+                var point = project(screen.width / 2.0, screen.height / 2.0);
+                check(WorldInventoryRenderer.pick(point.x(), point.y()) == null, "solid blocks occlude world panel interaction");
+                check(!screen.mouseClicked(point.x(), point.y(), 0), "clicking an occluded panel is ignored");
+                screen.mouseReleased(point.x(), point.y(), 0);
+                check(client.player.inventoryMenu.getCarried().getCount() == 3, "releasing over a blocked panel keeps carried items");
+                shot(client, "07-panel-occluded.png");
+                var uuid = client.player.getUUID();
+                var server = client.getSingleplayerServer();
+                server.execute(() -> {
+                    var player = server.getPlayerList().getPlayer(uuid);
+                    for (int x = -4; x <= 3; x++) for (int y = -60; y <= -56; y++) {
+                        player.serverLevel().setBlock(new BlockPos(x, y, 1), Blocks.AIR.defaultBlockState(), 3);
+                    }
+                });
+            }
+            case 353 -> {
+                clickSlot(client, 11, 0);
+                client.setScreen(null);
+                InventoryPerspectiveConfig.get().transitionMillis = 350;
+            }
             case 370 -> {
                 shot(client, "06-resource-pack-inventory.png");
                 client.player.closeContainer();
@@ -362,8 +445,25 @@ public class ClientSmoke implements ClientModInitializer {
         var positions = (ContainerAccessor) screen;
         double x = positions.smokeLeft() + slot.x + 8;
         double y = positions.smokeTop() + slot.y + 8;
-        screen.mouseClicked(x, y, button);
-        screen.mouseReleased(x, y, button);
+        clickGui(client, x, y, button);
+    }
+
+    private PanelGeometry.Point project(double x, double y) {
+        var point = WorldInventoryRenderer.geometry().project(x, y);
+        if (point == null) throw new AssertionError("Panel point behind camera at tick " + tick);
+        return point;
+    }
+
+    private void clickGui(Minecraft client, double x, double y, int button) {
+        var point = project(x, y);
+        var picked = WorldInventoryRenderer.pick(point.x(), point.y());
+        if (picked == null || Math.abs(picked.x() - x) > 0.1 || Math.abs(picked.y() - y) > 0.1) {
+            throw new AssertionError("World ray failed at tick " + tick + " for " + x + "," + y
+                    + " projected=" + point + " picked=" + picked + " raw="
+                    + WorldInventoryRenderer.geometry().intersect(point.x(), point.y()));
+        }
+        client.screen.mouseClicked(point.x(), point.y(), button);
+        client.screen.mouseReleased(point.x(), point.y(), button);
     }
 
     private void check(boolean condition, String description) {

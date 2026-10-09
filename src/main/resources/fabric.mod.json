@@ -3,7 +3,7 @@
 	"id": "inventory-perspective",
 	"version": "${version}",
 	"name": "Inventory Perspective",
-	"description": "A shoulder camera and side-positioned vanilla inventory. Keep moving with InvMove while managing your items.",
+	"description": "Your vanilla inventory unfolds into a world-space panel, viewed over the shoulder. Keep moving with InvMove while managing your items.",
 	"authors": [
 		"寿云"
 	],
