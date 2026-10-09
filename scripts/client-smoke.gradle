@@ -1,0 +1,37 @@
+sourceSets {
+    smoke {
+        java.srcDir 'scripts/smoke/java'
+        resources.srcDir 'scripts/smoke/resources'
+        compileClasspath += sourceSets.client.compileClasspath + sourceSets.main.output + sourceSets.client.output
+        runtimeClasspath += sourceSets.client.runtimeClasspath + sourceSets.main.output + sourceSets.client.output
+    }
+}
+
+loom {
+    mods {
+        'inventory-perspective-smoke' { sourceSet sourceSets.smoke }
+    }
+    runs {
+        clientSmoke {
+            client()
+            source sourceSets.smoke
+            runDir project.hasProperty('withoutModMenu') ? 'run-smoke-without-modmenu' : 'run-smoke'
+            programArgs '--width', '1280', '--height', '720'
+            vmArg '-DinventoryPerspective.smoke=true'
+        }
+    }
+}
+
+def smokeReport = layout.projectDirectory.file((project.hasProperty('withoutModMenu') ? 'run-smoke-without-modmenu' : 'run-smoke') + '/smoke-evidence/result.json')
+def smokeFailure = layout.projectDirectory.file((project.hasProperty('withoutModMenu') ? 'run-smoke-without-modmenu' : 'run-smoke') + '/smoke-evidence/FAILED.txt')
+tasks.named('runClientSmoke') {
+    doFirst {
+        java.nio.file.Files.deleteIfExists(smokeReport.asFile.toPath())
+        java.nio.file.Files.deleteIfExists(smokeFailure.asFile.toPath())
+    }
+    doLast {
+        if (smokeFailure.asFile.exists()) throw new GradleException(smokeFailure.asFile.text)
+        if (!smokeReport.asFile.exists()) throw new GradleException('Client exited without a smoke report')
+        logger.lifecycle('Client smoke report: ' + smokeReport.asFile)
+    }
+}

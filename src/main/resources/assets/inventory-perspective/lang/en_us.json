@@ -1,0 +1,12 @@
+{
+  "modmenu.nameTranslation.inventory-perspective": "Inventory Perspective",
+  "modmenu.summaryTranslation.inventory-perspective": "An over-the-shoulder view of your inventory",
+  "modmenu.descriptionTranslation.inventory-perspective": "Smoothly switch to a shoulder camera when opening the survival inventory. Keeps vanilla and resource-pack visuals, with movement provided by InvMove.",
+  "inventory-perspective.config.title": "Inventory Perspective Settings",
+  "inventory-perspective.config.general": "Inventory Perspective",
+  "inventory-perspective.config.enabled": "Enable Inventory Perspective",
+  "inventory-perspective.config.right": "Show inventory on the right",
+  "inventory-perspective.config.right.tooltip": "On: player on the left, inventory on the right. Off: player on the right, inventory on the left. An open recipe book uses the vanilla layout.",
+  "inventory-perspective.config.duration": "Camera transition duration (milliseconds)",
+  "inventory-perspective.config.duration.tooltip": "Controls opening and returning camera motion. Set to 0 to disable animation. Configure movement and sneaking in InvMove."
+}
