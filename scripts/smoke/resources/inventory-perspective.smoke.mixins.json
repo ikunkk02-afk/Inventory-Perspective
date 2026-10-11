@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "com.shouyun.inventoryperspective.smoke.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["InputConstantsMixin", "ContainerAccessor", "RecipeBookAccessor", "MouseHandlerAccessor"],
+  "injectors": { "defaultRequire": 1 }
+}

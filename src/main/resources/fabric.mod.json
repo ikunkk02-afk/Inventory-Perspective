@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "inventory-perspective",
+	"version": "${version}",
+	"name": "Inventory Perspective",
+	"description": "Your vanilla inventory unfolds into a world-space panel, viewed over the shoulder. Keep moving with InvMove while managing your items.",
+	"authors": [
+		"寿云"
+	],
+	"contact": {
+		"sources": "https://github.com/ikunkk02-afk/Inventory-Perspective",
+		"issues": "https://github.com/ikunkk02-afk/Inventory-Perspective/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/inventory-perspective/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.shouyun.inventoryperspective.client.InventoryPerspectiveClient"
+		],
+		"modmenu": [
+			"com.shouyun.inventoryperspective.client.config.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "inventory-perspective.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*",
+		"cloth-config": ">=15.0.140",
+		"invmove": ">=0.9.3"
+	},
+	"suggests": { "modmenu": "*" }
+}

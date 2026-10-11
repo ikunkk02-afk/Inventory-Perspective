@@ -1,0 +1,12 @@
+{
+  "modmenu.nameTranslation.inventory-perspective": "Inventory Perspective",
+  "modmenu.summaryTranslation.inventory-perspective": "Your inventory unfolds into the world",
+  "modmenu.descriptionTranslation.inventory-perspective": "The survival inventory unfolds from in front of your player into a world-space panel, viewed over the shoulder. Keeps resource-pack visuals, with movement provided by InvMove.",
+  "inventory-perspective.config.title": "Inventory Perspective Settings",
+  "inventory-perspective.config.general": "Inventory Perspective",
+  "inventory-perspective.config.enabled": "Enable Inventory Perspective",
+  "inventory-perspective.config.right": "Show inventory on the right",
+  "inventory-perspective.config.right.tooltip": "On: player on the left, panel unfolds right. Off: player on the right, panel unfolds left. The recipe book stays on the world panel.",
+  "inventory-perspective.config.duration": "Unfold and camera duration (milliseconds)",
+  "inventory-perspective.config.duration.tooltip": "Controls the panel unfolding, folding away, and shoulder camera motion. Set to 0 to disable animation. Configure movement and sneaking in InvMove."
+}
